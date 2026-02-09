@@ -1,0 +1,47 @@
+appId: com.malcolmocean.randoping
+name: "Verify Persistence Across Restart"
+---
+
+# Start fresh
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Handle permission dialog
+- runFlow:
+    when:
+      visible:
+        id: "com.android.permissioncontroller:id/permission_allow_button"
+    commands:
+      - tapOn:
+          id: "com.android.permissioncontroller:id/permission_allow_button"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "No pings configured"
+    timeout: 15000
+
+# Add a ping
+- tapOn: "Add ping"
+- extendedWaitUntil:
+    visible: "Ping!"
+    timeout: 5000
+- assertVisible: "Enabled"
+
+# Add a second ping
+- tapOn: "Add ping"
+- extendedWaitUntil:
+    visible: "Ping 2!"
+    timeout: 5000
+
+# Kill and relaunch (without clearing state)
+- stopApp
+- launchApp
+- waitForAnimationToEnd
+
+# Verify both pings survived the restart
+- extendedWaitUntil:
+    visible: "Ping!"
+    timeout: 15000
+- assertVisible: "Ping 2!"
+- assertVisible: "Enabled"

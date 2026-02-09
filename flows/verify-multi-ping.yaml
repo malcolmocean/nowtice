@@ -1,0 +1,106 @@
+appId: com.malcolmocean.randoping
+name: "Verify Multi-Ping Implementation"
+---
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Handle notification permission dialog if it appears
+- runFlow:
+    when:
+      visible:
+        id: "com.android.permissioncontroller:id/permission_allow_button"
+    commands:
+      - tapOn:
+          id: "com.android.permissioncontroller:id/permission_allow_button"
+      - waitForAnimationToEnd
+
+# Verify empty state
+- extendedWaitUntil:
+    visible: "No pings configured"
+    timeout: 15000
+
+# --- TEST 1: Add first ping ---
+- tapOn: "Add ping"
+- extendedWaitUntil:
+    visible: "Enabled"
+    timeout: 5000
+- assertVisible: "Ping!"
+- assertVisible: "notice the vividness of reality"
+- assertVisible: "45 minutes"
+
+# --- TEST 2: Add second ping via + tab ---
+- tapOn: "Add ping"
+- extendedWaitUntil:
+    visible: "Ping 2!"
+    timeout: 5000
+
+# --- TEST 3: Add third ping via + tab ---
+- tapOn: "Add ping"
+- extendedWaitUntil:
+    visible: "Ping 3!"
+    timeout: 5000
+
+# --- TEST 4: Switch between tabs ---
+- tapOn: "Ping!"
+- waitForAnimationToEnd
+- assertVisible: "Ping!"
+
+- tapOn: "Ping 2!"
+- waitForAnimationToEnd
+- assertVisible: "Ping 2!"
+
+- tapOn: "Ping 3!"
+- waitForAnimationToEnd
+- assertVisible: "Ping 3!"
+
+# --- TEST 5: Delete third ping ---
+- scrollUntilVisible:
+    element: "Delete this ping"
+- tapOn: "Delete this ping"
+- extendedWaitUntil:
+    visible: "Delete Ping 3!?"
+    timeout: 3000
+# Tap the Delete button in the dialog (use regex for exact match)
+- tapOn:
+    text: "^Delete$"
+- waitForAnimationToEnd
+
+# Verify Ping 3! tab is gone
+- extendedWaitUntil:
+    visible: "Ping 2!"
+    timeout: 5000
+- assertNotVisible: "Ping 3!"
+
+# --- TEST 6: Delete second ping ---
+- scrollUntilVisible:
+    element: "Delete this ping"
+- tapOn: "Delete this ping"
+- extendedWaitUntil:
+    visible: "Delete Ping 2!?"
+    timeout: 3000
+- tapOn:
+    text: "^Delete$"
+- waitForAnimationToEnd
+
+# Verify only Ping! tab remains
+- extendedWaitUntil:
+    visible: "Ping!"
+    timeout: 5000
+- assertNotVisible: "Ping 2!"
+
+# --- TEST 7: Delete last ping - verify empty state returns ---
+- scrollUntilVisible:
+    element: "Delete this ping"
+- tapOn: "Delete this ping"
+- extendedWaitUntil:
+    visible: "Delete Ping!?"
+    timeout: 3000
+- tapOn:
+    text: "^Delete$"
+
+# Verify empty state
+- extendedWaitUntil:
+    visible: "No pings configured"
+    timeout: 5000
