@@ -11,35 +11,28 @@ import kotlin.random.Random
 
 object PingScheduler {
 
-    private const val PING_REQUEST_CODE = 1001
-
-    /**
-     * Schedule the next ping using exponential distribution (TagTime style).
-     * The gap between pings follows an exponential distribution with mean = avgMinutes.
-     */
-    fun scheduleNextPing(context: Context, settings: PingSettings) {
-        if (!settings.enabled) {
-            cancelPing(context)
+    fun scheduleNextPing(context: Context, config: PingConfig) {
+        if (!config.enabled) {
+            cancelPing(context, config)
             return
         }
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, PingReceiver::class.java)
+        val intent = Intent(context, PingReceiver::class.java).apply {
+            putExtra("ping_id", config.id)
+        }
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            PING_REQUEST_CODE,
+            config.requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Calculate next ping time using exponential distribution
-        val delayMinutes = exponentialRandom(settings.avgMinutes.toDouble())
+        val delayMinutes = exponentialRandom(config.avgMinutes.toDouble())
         var nextPingTime = System.currentTimeMillis() + (delayMinutes * 60 * 1000).toLong()
 
-        // Adjust for quiet hours
-        nextPingTime = adjustForQuietHours(nextPingTime, settings)
+        nextPingTime = adjustForQuietHours(nextPingTime, config)
 
-        // Schedule the alarm
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (alarmManager.canScheduleExactAlarms()) {
                 alarmManager.setExactAndAllowWhileIdle(
@@ -48,7 +41,6 @@ object PingScheduler {
                     pendingIntent
                 )
             } else {
-                // Fall back to inexact alarm
                 alarmManager.setAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     nextPingTime,
@@ -64,51 +56,50 @@ object PingScheduler {
         }
     }
 
-    fun cancelPing(context: Context) {
+    fun cancelPing(context: Context, config: PingConfig) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, PingReceiver::class.java)
+        val intent = Intent(context, PingReceiver::class.java).apply {
+            putExtra("ping_id", config.id)
+        }
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            PING_REQUEST_CODE,
+            config.requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         alarmManager.cancel(pendingIntent)
     }
 
-    /**
-     * Exponential random variable with given mean.
-     * This gives the "memoryless" property - the expected time to next ping
-     * is always the same regardless of when the last ping was.
-     */
+    fun scheduleAll(context: Context, configs: List<PingConfig>) {
+        for (config in configs) {
+            if (config.enabled) {
+                scheduleNextPing(context, config)
+            } else {
+                cancelPing(context, config)
+            }
+        }
+    }
+
     private fun exponentialRandom(mean: Double): Double {
         return -mean * ln(1 - Random.nextDouble())
     }
 
-    /**
-     * If the scheduled time falls within quiet hours, push it to after quiet hours end.
-     */
-    private fun adjustForQuietHours(timeMillis: Long, settings: PingSettings): Long {
-        val calendar = Calendar.getInstance().apply { timeInMillis = timeMillis }
+    private fun adjustForQuietHours(timeMillis: Long, config: PingConfig): Long {
+        val calendar = Calendar.getInstance().apply { this.timeInMillis = timeMillis }
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
 
-        val inQuietHours = if (settings.quietStartHour > settings.quietEndHour) {
-            // Quiet hours span midnight (e.g., 22:00 to 08:00)
-            hour >= settings.quietStartHour || hour < settings.quietEndHour
+        val inQuietHours = if (config.quietStartHour > config.quietEndHour) {
+            hour >= config.quietStartHour || hour < config.quietEndHour
         } else {
-            // Quiet hours within same day (e.g., 14:00 to 16:00)
-            hour >= settings.quietStartHour && hour < settings.quietEndHour
+            hour >= config.quietStartHour && hour < config.quietEndHour
         }
 
         if (inQuietHours) {
-            // Move to quiet end hour
-            calendar.set(Calendar.HOUR_OF_DAY, settings.quietEndHour)
+            calendar.set(Calendar.HOUR_OF_DAY, config.quietEndHour)
             calendar.set(Calendar.MINUTE, 0)
             calendar.set(Calendar.SECOND, 0)
 
-            // If we're past midnight but before quiet end, it's today
-            // If we're before midnight but after quiet start, it's tomorrow
-            if (hour >= settings.quietStartHour) {
+            if (hour >= config.quietStartHour) {
                 calendar.add(Calendar.DAY_OF_YEAR, 1)
             }
 

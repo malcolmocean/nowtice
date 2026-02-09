@@ -13,10 +13,10 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             CoroutineScope(Dispatchers.IO).launch {
-                val settings = SettingsRepository(context).settings.first()
-                if (settings.enabled) {
-                    PingScheduler.scheduleNextPing(context, settings)
-                }
+                val repo = SettingsRepository(context)
+                repo.ensureMigrated()
+                val configs = repo.pingConfigs.first()
+                PingScheduler.scheduleAll(context, configs)
             }
         }
     }
