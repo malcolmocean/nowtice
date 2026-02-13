@@ -15,6 +15,11 @@ import kotlinx.coroutines.launch
 
 class PingReceiver : BroadcastReceiver() {
 
+    companion object {
+        // Shared ID so each new ping replaces the previous, even across different ping types
+        const val NOTIFICATION_ID = 1
+    }
+
     override fun onReceive(context: Context, intent: Intent) {
         val pingId = intent.getStringExtra("ping_id") ?: return
 
@@ -71,6 +76,6 @@ class PingReceiver : BroadcastReceiver() {
             .setVibrate(longArrayOf(0, 250, 250, 250))
             .build()
 
-        notificationManager.notify(config.notificationId, notification)
+        notificationManager.notify(NOTIFICATION_ID, notification)
     }
 }
