@@ -28,7 +28,9 @@ data class PingConfig(
     val quietEndHour: Int = 8,
     val enabled: Boolean = true,
     val colorValue: Long = PingColors.defaultColor,
-    val iconName: String = "bell"
+    val iconName: String = "bell",
+    val vibrationPattern: String = "default",
+    val customVibrationPattern: String = ""
 ) {
     val requestCode: Int get() = id.hashCode()
     val notificationId: Int get() = id.hashCode() ushr 1
@@ -103,6 +105,46 @@ object PingIcons {
     fun findByKey(key: String): IconEntry? = all.find { it.key == key }
 
     val default: IconEntry get() = all.first()
+}
+
+data class VibrationEntry(
+    val key: String,
+    val label: String,
+    val description: String,
+    val pattern: LongArray
+)
+
+object VibrationPatterns {
+    val none = VibrationEntry("none", "None", "Silent", longArrayOf())
+    val default = VibrationEntry("default", "Default", "Two quick buzzes", longArrayOf(0, 250, 250, 250))
+    val gentle = VibrationEntry("gentle", "Gentle", "Single soft tap", longArrayOf(0, 150))
+    val heartbeat = VibrationEntry("heartbeat", "Heartbeat", "Lub-dub", longArrayOf(0, 100, 150, 300))
+    val staccato = VibrationEntry("staccato", "Staccato", "Rapid triple tap", longArrayOf(0, 80, 80, 80, 80, 80))
+    val pulse = VibrationEntry("pulse", "Pulse", "Long-short-long", longArrayOf(0, 400, 200, 100, 200, 400))
+    val shaveAndHaircut = VibrationEntry(
+        "shave_and_haircut", "Shave & Haircut", "The classic knock",
+        longArrayOf(0, 150, 100, 100, 50, 100, 100, 150, 100, 150, 350, 150, 100, 200)
+    )
+
+    val presets = listOf(none, default, gentle, heartbeat, staccato, pulse, shaveAndHaircut)
+
+    fun findByKey(key: String): VibrationEntry? = presets.find { it.key == key }
+
+    fun resolve(config: PingConfig): LongArray {
+        if (config.vibrationPattern == "custom") {
+            return parseCustomPattern(config.customVibrationPattern)
+        }
+        return findByKey(config.vibrationPattern)?.pattern ?: default.pattern
+    }
+
+    fun parseCustomPattern(input: String): LongArray {
+        if (input.isBlank()) return default.pattern
+        return try {
+            input.split(",").map { it.trim().toLong().coerceIn(0, 5000) }.toLongArray()
+        } catch (e: NumberFormatException) {
+            default.pattern
+        }
+    }
 }
 
 private val json = Json { ignoreUnknownKeys = true }

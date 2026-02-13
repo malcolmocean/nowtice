@@ -47,7 +47,11 @@ class PingReceiver : BroadcastReceiver() {
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Pings for ${config.name}"
-                enableVibration(true)
+                val vibPattern = VibrationPatterns.resolve(config)
+                enableVibration(vibPattern.isNotEmpty())
+                if (vibPattern.isNotEmpty()) {
+                    vibrationPattern = vibPattern
+                }
             }
             notificationManager.createNotificationChannel(channel)
         }
@@ -64,7 +68,9 @@ class PingReceiver : BroadcastReceiver() {
 
         val iconEntry = PingIcons.findByKey(config.iconName) ?: PingIcons.default
 
-        val notification = NotificationCompat.Builder(context, config.channelId)
+        val vibrationPattern = VibrationPatterns.resolve(config)
+
+        val builder = NotificationCompat.Builder(context, config.channelId)
             .setSmallIcon(iconEntry.drawableResId)
             .setContentTitle(config.name)
             .setContentText(config.message)
@@ -73,8 +79,14 @@ class PingReceiver : BroadcastReceiver() {
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setColor(config.colorValue.toInt())
-            .setVibrate(longArrayOf(0, 250, 250, 250))
-            .build()
+
+        if (vibrationPattern.isNotEmpty()) {
+            builder.setVibrate(vibrationPattern)
+        } else {
+            builder.setVibrate(longArrayOf(0))
+        }
+
+        val notification = builder.build()
 
         notificationManager.notify(NOTIFICATION_ID, notification)
     }

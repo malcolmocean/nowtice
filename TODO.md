@@ -1,0 +1,5 @@
+- [x] make it so that each ping clears the previous even if different types
+- [x] add settings for different vibration patterns
+  - [x] 6 interesting presets, incl shave+haircut
+  - [x] totally custom
+- [ ] add test button to settings, that will demo the notif (and force perm req)

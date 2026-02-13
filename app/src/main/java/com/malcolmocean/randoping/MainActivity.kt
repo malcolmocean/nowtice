@@ -482,6 +482,12 @@ fun PingConfigEditor(
             }
         }
 
+        // Vibration pattern picker
+        VibrationPatternPicker(
+            config = config,
+            onUpdate = onUpdate
+        )
+
         // Delete button
         OutlinedButton(
             onClick = { showDeleteDialog = true },
@@ -523,6 +529,123 @@ fun PingConfigEditor(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun VibrationPatternPicker(
+    config: PingConfig,
+    onUpdate: (PingConfig) -> Unit
+) {
+    var customText by remember(config.id) { mutableStateOf(config.customVibrationPattern) }
+    val isCustom = config.vibrationPattern == "custom"
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Vibration", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            VibrationPatterns.presets.forEach { entry ->
+                val isSelected = config.vibrationPattern == entry.key
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.small)
+                        .background(
+                            if (isSelected) PingColors.toComposeColor(config.colorValue).copy(alpha = 0.12f)
+                            else Color.Transparent
+                        )
+                        .clickable {
+                            onUpdate(config.copy(vibrationPattern = entry.key))
+                        }
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            entry.label,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (isSelected) PingColors.toComposeColor(config.colorValue)
+                                    else MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            entry.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (isSelected) {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = "Selected",
+                            tint = PingColors.toComposeColor(config.colorValue),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+            // Custom option
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.small)
+                    .background(
+                        if (isCustom) PingColors.toComposeColor(config.colorValue).copy(alpha = 0.12f)
+                        else Color.Transparent
+                    )
+                    .clickable {
+                        onUpdate(config.copy(vibrationPattern = "custom"))
+                    }
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        "Custom",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (isCustom) PingColors.toComposeColor(config.colorValue)
+                                else MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        "Define your own pattern",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (isCustom) {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = "Selected",
+                        tint = PingColors.toComposeColor(config.colorValue),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            if (isCustom) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = customText,
+                    onValueChange = { customText = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged {
+                            if (!it.isFocused) {
+                                onUpdate(config.copy(customVibrationPattern = customText))
+                            }
+                        },
+                    label = { Text("Pattern (ms)") },
+                    placeholder = { Text("0, 200, 100, 200") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                Text(
+                    "Comma-separated milliseconds: wait, vibrate, wait, vibrate, ...",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 
