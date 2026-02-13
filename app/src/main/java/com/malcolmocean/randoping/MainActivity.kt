@@ -634,13 +634,15 @@ fun VibrationPatternPicker(
                                 onUpdate(config.copy(customVibrationPattern = customText))
                             }
                         },
-                    label = { Text("Pattern (ms)") },
-                    placeholder = { Text("0, 200, 100, 200") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    label = { Text("Pattern") },
+                    placeholder = { Text("0, 200:180, 100, 300:255") },
+                    singleLine = true
                 )
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    "Comma-separated milliseconds: wait, vibrate, wait, vibrate, ...",
+                    "Comma-separated values alternating: pause, buzz, pause, buzz, ...\n" +
+                    "Each value is milliseconds (max 5000). Add :strength (0\u2013255) " +
+                    "to control intensity, e.g. 200:128 for a half-strength 200ms buzz.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

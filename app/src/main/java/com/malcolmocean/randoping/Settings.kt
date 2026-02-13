@@ -111,38 +111,75 @@ data class VibrationEntry(
     val key: String,
     val label: String,
     val description: String,
-    val pattern: LongArray
+    val timings: LongArray,
+    val amplitudes: IntArray? = null
 )
 
+data class ResolvedVibration(
+    val timings: LongArray,
+    val amplitudes: IntArray?
+) {
+    val isEmpty get() = timings.isEmpty()
+}
+
 object VibrationPatterns {
-    val none = VibrationEntry("none", "None", "Silent", longArrayOf())
-    val default = VibrationEntry("default", "Default", "Two quick buzzes", longArrayOf(0, 250, 250, 250))
-    val gentle = VibrationEntry("gentle", "Gentle", "Single soft tap", longArrayOf(0, 150))
-    val heartbeat = VibrationEntry("heartbeat", "Heartbeat", "Lub-dub", longArrayOf(0, 100, 150, 300))
-    val staccato = VibrationEntry("staccato", "Staccato", "Rapid triple tap", longArrayOf(0, 80, 80, 80, 80, 80))
-    val pulse = VibrationEntry("pulse", "Pulse", "Long-short-long", longArrayOf(0, 400, 200, 100, 200, 400))
+    val none = VibrationEntry("none", "None", "Silent",
+        timings = longArrayOf(),
+        amplitudes = null)
+    val default = VibrationEntry("default", "Default", "Two quick buzzes",
+        timings = longArrayOf(0, 250, 250, 250),
+        amplitudes = intArrayOf(0, 255, 0, 255))
+    val gentle = VibrationEntry("gentle", "Gentle", "Single soft tap, half strength",
+        timings = longArrayOf(0, 200),
+        amplitudes = intArrayOf(0, 120))
+    val heartbeat = VibrationEntry("heartbeat", "Heartbeat", "Lub-dub",
+        timings = longArrayOf(0, 100, 150, 300),
+        amplitudes = intArrayOf(0, 180, 0, 255))
+    val staccato = VibrationEntry("staccato", "Staccato", "Rapid triple tap",
+        timings = longArrayOf(0, 80, 80, 80, 80, 80),
+        amplitudes = intArrayOf(0, 255, 0, 255, 0, 255))
+    val pulse = VibrationEntry("pulse", "Pulse", "Soft to strong",
+        timings = longArrayOf(0, 300, 150, 300, 150, 300),
+        amplitudes = intArrayOf(0, 80, 0, 160, 0, 255))
     val shaveAndHaircut = VibrationEntry(
         "shave_and_haircut", "Shave & Haircut", "The classic knock",
-        longArrayOf(0, 150, 100, 100, 50, 100, 100, 150, 100, 150, 350, 150, 100, 200)
-    )
+        timings = longArrayOf(0, 150, 100, 100, 50, 100, 100, 150, 100, 150, 350, 150, 100, 200),
+        amplitudes = intArrayOf(0, 230, 0, 200, 0, 200, 0, 230, 0, 230, 0, 230, 0, 255))
 
     val presets = listOf(none, default, gentle, heartbeat, staccato, pulse, shaveAndHaircut)
 
     fun findByKey(key: String): VibrationEntry? = presets.find { it.key == key }
 
-    fun resolve(config: PingConfig): LongArray {
+    fun resolve(config: PingConfig): ResolvedVibration {
         if (config.vibrationPattern == "custom") {
             return parseCustomPattern(config.customVibrationPattern)
         }
-        return findByKey(config.vibrationPattern)?.pattern ?: default.pattern
+        val entry = findByKey(config.vibrationPattern) ?: default
+        return ResolvedVibration(entry.timings, entry.amplitudes)
     }
 
-    fun parseCustomPattern(input: String): LongArray {
-        if (input.isBlank()) return default.pattern
+    fun parseCustomPattern(input: String): ResolvedVibration {
+        if (input.isBlank()) return ResolvedVibration(default.timings, default.amplitudes)
         return try {
-            input.split(",").map { it.trim().toLong().coerceIn(0, 5000) }.toLongArray()
+            val segments = input.split(",").map { it.trim() }
+            val timings = LongArray(segments.size)
+            val amplitudes = IntArray(segments.size)
+            var hasAmplitudes = false
+            for ((i, seg) in segments.withIndex()) {
+                if (":" in seg) {
+                    hasAmplitudes = true
+                    val parts = seg.split(":")
+                    timings[i] = parts[0].trim().toLong().coerceIn(0, 5000)
+                    amplitudes[i] = parts[1].trim().toInt().coerceIn(0, 255)
+                } else {
+                    timings[i] = seg.toLong().coerceIn(0, 5000)
+                    // Default: 0 for even indices (waits), 255 for odd (vibrations)
+                    amplitudes[i] = if (i % 2 == 0) 0 else 255
+                }
+            }
+            ResolvedVibration(timings, if (hasAmplitudes) amplitudes else null)
         } catch (e: NumberFormatException) {
-            default.pattern
+            ResolvedVibration(default.timings, default.amplitudes)
         }
     }
 }

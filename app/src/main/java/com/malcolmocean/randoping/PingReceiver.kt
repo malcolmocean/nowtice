@@ -7,6 +7,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,21 +42,25 @@ class PingReceiver : BroadcastReceiver() {
     private fun showNotification(context: Context, config: PingConfig) {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val resolved = VibrationPatterns.resolve(config)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                config.channelId,
-                config.name,
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Pings for ${config.name}"
-                val vibPattern = VibrationPatterns.resolve(config)
-                enableVibration(vibPattern.isNotEmpty())
-                if (vibPattern.isNotEmpty()) {
-                    vibrationPattern = vibPattern
-                }
-            }
-            notificationManager.createNotificationChannel(channel)
+        // Delete and recreate channel so vibration settings take effect
+        // (channel settings are sticky after first creation)
+        notificationManager.deleteNotificationChannel(config.channelId)
+        val channel = NotificationChannel(
+            config.channelId,
+            config.name,
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Pings for ${config.name}"
+            // Disable channel vibration — we handle it manually for amplitude control
+            enableVibration(false)
+        }
+        notificationManager.createNotificationChannel(channel)
+
+        // Vibrate manually so we can use amplitude control
+        if (!resolved.isEmpty) {
+            triggerVibration(context, resolved)
         }
 
         val tapIntent = Intent(context, MainActivity::class.java).apply {
@@ -68,9 +75,7 @@ class PingReceiver : BroadcastReceiver() {
 
         val iconEntry = PingIcons.findByKey(config.iconName) ?: PingIcons.default
 
-        val vibrationPattern = VibrationPatterns.resolve(config)
-
-        val builder = NotificationCompat.Builder(context, config.channelId)
+        val notification = NotificationCompat.Builder(context, config.channelId)
             .setSmallIcon(iconEntry.drawableResId)
             .setContentTitle(config.name)
             .setContentText(config.message)
@@ -79,15 +84,26 @@ class PingReceiver : BroadcastReceiver() {
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setColor(config.colorValue.toInt())
-
-        if (vibrationPattern.isNotEmpty()) {
-            builder.setVibrate(vibrationPattern)
-        } else {
-            builder.setVibrate(longArrayOf(0))
-        }
-
-        val notification = builder.build()
+            .setVibrate(longArrayOf(0))
+            .build()
 
         notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+
+    private fun triggerVibration(context: Context, resolved: ResolvedVibration) {
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vm = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vm.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+
+        val effect = if (resolved.amplitudes != null && vibrator.hasAmplitudeControl()) {
+            VibrationEffect.createWaveform(resolved.timings, resolved.amplitudes, -1)
+        } else {
+            VibrationEffect.createWaveform(resolved.timings, -1)
+        }
+        vibrator.vibrate(effect)
     }
 }
