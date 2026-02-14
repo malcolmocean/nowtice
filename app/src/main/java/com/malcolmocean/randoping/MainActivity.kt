@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -30,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
@@ -487,6 +489,45 @@ fun PingConfigEditor(
             config = config,
             onUpdate = onUpdate
         )
+
+        // Test notification button
+        val context = LocalContext.current
+        val permissionLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { granted ->
+            if (granted) {
+                val currentConfig = config.copy(
+                    name = nameText,
+                    message = messageText,
+                    avgMinutes = sliderValue.toInt(),
+                    quietStartHour = quietStartText.toIntOrNull()?.coerceIn(0, 23) ?: config.quietStartHour,
+                    quietEndHour = quietEndText.toIntOrNull()?.coerceIn(0, 23) ?: config.quietEndHour
+                )
+                NotificationHelper.showNotification(context, currentConfig)
+            }
+        }
+        OutlinedButton(
+            onClick = {
+                val currentConfig = config.copy(
+                    name = nameText,
+                    message = messageText,
+                    avgMinutes = sliderValue.toInt(),
+                    quietStartHour = quietStartText.toIntOrNull()?.coerceIn(0, 23) ?: config.quietStartHour,
+                    quietEndHour = quietEndText.toIntOrNull()?.coerceIn(0, 23) ?: config.quietEndHour
+                )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED
+                ) {
+                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    NotificationHelper.showNotification(context, currentConfig)
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Test Notification")
+        }
 
         // Delete button
         OutlinedButton(
