@@ -492,36 +492,29 @@ fun PingConfigEditor(
 
         // Test notification button
         val context = LocalContext.current
+        fun currentConfig() = config.copy(
+            name = nameText,
+            message = messageText,
+            avgMinutes = sliderValue.toInt(),
+            quietStartHour = quietStartText.toIntOrNull()?.coerceIn(0, 23) ?: config.quietStartHour,
+            quietEndHour = quietEndText.toIntOrNull()?.coerceIn(0, 23) ?: config.quietEndHour
+        )
         val permissionLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { granted ->
             if (granted) {
-                val currentConfig = config.copy(
-                    name = nameText,
-                    message = messageText,
-                    avgMinutes = sliderValue.toInt(),
-                    quietStartHour = quietStartText.toIntOrNull()?.coerceIn(0, 23) ?: config.quietStartHour,
-                    quietEndHour = quietEndText.toIntOrNull()?.coerceIn(0, 23) ?: config.quietEndHour
-                )
-                NotificationHelper.showNotification(context, currentConfig)
+                NotificationHelper.showNotification(context, currentConfig())
             }
         }
         OutlinedButton(
             onClick = {
-                val currentConfig = config.copy(
-                    name = nameText,
-                    message = messageText,
-                    avgMinutes = sliderValue.toInt(),
-                    quietStartHour = quietStartText.toIntOrNull()?.coerceIn(0, 23) ?: config.quietStartHour,
-                    quietEndHour = quietEndText.toIntOrNull()?.coerceIn(0, 23) ?: config.quietEndHour
-                )
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                     ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED
                 ) {
                     permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 } else {
-                    NotificationHelper.showNotification(context, currentConfig)
+                    NotificationHelper.showNotification(context, currentConfig())
                 }
             },
             modifier = Modifier.fillMaxWidth()

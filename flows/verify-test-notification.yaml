@@ -1,0 +1,60 @@
+appId: com.malcolmocean.randoping
+name: "Verify Test Notification Button"
+---
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Handle "System UI isn't responding" dialog if it appears
+- runFlow:
+    when:
+      visible: "Wait"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd
+
+# Handle notification permission dialog if it appears
+- runFlow:
+    when:
+      visible:
+        id: "com.android.permissioncontroller:id/permission_allow_button"
+    commands:
+      - tapOn:
+          id: "com.android.permissioncontroller:id/permission_allow_button"
+      - waitForAnimationToEnd
+
+# Handle "System UI isn't responding" again after permission
+- runFlow:
+    when:
+      visible: "System UI isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd
+
+# Start from empty state
+- extendedWaitUntil:
+    visible: "No pings configured"
+    timeout: 15000
+
+# Add a ping
+- tapOn: "Add ping"
+- extendedWaitUntil:
+    visible: "Enabled"
+    timeout: 5000
+
+# Scroll down to find the Test Notification button
+- scrollUntilVisible:
+    element: "Test Notification"
+
+# Verify the button exists
+- assertVisible: "Test Notification"
+
+# Tap the test notification button
+- tapOn: "Test Notification"
+- waitForAnimationToEnd
+
+# Verify app is still functional after tapping (scroll to confirm delete button still there)
+- scrollUntilVisible:
+    element: "Delete this ping"
+- assertVisible: "Delete this ping"

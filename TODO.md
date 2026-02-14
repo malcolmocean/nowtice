@@ -2,4 +2,5 @@
 - [x] add settings for different vibration patterns
   - [x] 6 interesting presets, incl shave+haircut
   - [x] totally custom
-- [ ] add test button to settings, that will demo the notif (and force perm req)
+- [x] add test button to settings, that will demo the notif (and force perm req)
+- [ ] instead of emphasizing the purple theme, increase use of the color chosen for a given ping.  eg in the notif itself, or if possible in the underline of the focused tab in the settings.  if not possible don't worry about it
