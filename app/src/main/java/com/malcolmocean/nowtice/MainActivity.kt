@@ -1,4 +1,4 @@
-package com.malcolmocean.randoping
+package com.malcolmocean.nowtice
 
 import android.Manifest
 import android.app.NotificationManager
@@ -9,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -127,7 +128,7 @@ fun MultiPingScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
-            text = "RandoPing",
+            text = "Nowtice",
             style = MaterialTheme.typography.headlineLarge,
             modifier = Modifier.padding(16.dp)
         )
@@ -200,9 +201,22 @@ fun PingTabRow(
     onTabSelected: (Int) -> Unit,
     onAddPing: () -> Unit
 ) {
+    val selectedColor = configs.getOrNull(selectedTabIndex)?.let {
+        PingColors.toComposeColor(it.colorValue)
+    } ?: MaterialTheme.colorScheme.primary
     ScrollableTabRow(
         selectedTabIndex = selectedTabIndex.coerceIn(0, configs.size),
-        edgePadding = 8.dp
+        edgePadding = 8.dp,
+        indicator = @Composable { tabPositions ->
+            if (selectedTabIndex < tabPositions.size) {
+                with(TabRowDefaults) {
+                    Indicator(
+                        Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                        color = selectedColor
+                    )
+                }
+            }
+        }
     ) {
         configs.forEachIndexed { index, config ->
             val iconEntry = PingIcons.findByKey(config.iconName) ?: PingIcons.default
@@ -259,6 +273,12 @@ fun PingConfigEditor(
     var messageText by remember(config.id) { mutableStateOf(config.message) }
     var quietStartText by remember(config.id) { mutableStateOf(config.quietStartHour.toString()) }
     var quietEndText by remember(config.id) { mutableStateOf(config.quietEndHour.toString()) }
+    val pingColor = PingColors.toComposeColor(config.colorValue)
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = pingColor,
+        cursorColor = pingColor,
+        focusedLabelColor = pingColor
+    )
 
     Column(
         modifier = Modifier
@@ -279,7 +299,11 @@ fun PingConfigEditor(
                 Text("Enabled", style = MaterialTheme.typography.titleMedium)
                 Switch(
                     checked = config.enabled,
-                    onCheckedChange = { onUpdate(config.copy(enabled = it)) }
+                    onCheckedChange = { onUpdate(config.copy(enabled = it)) },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = pingColor
+                    )
                 )
             }
         }
@@ -295,7 +319,8 @@ fun PingConfigEditor(
                     modifier = Modifier
                         .fillMaxWidth()
                         .onFocusChanged { if (!it.isFocused) onUpdate(config.copy(name = nameText)) },
-                    singleLine = true
+                    singleLine = true,
+                    colors = textFieldColors
                 )
             }
         }
@@ -311,7 +336,8 @@ fun PingConfigEditor(
                     modifier = Modifier
                         .fillMaxWidth()
                         .onFocusChanged { if (!it.isFocused) onUpdate(config.copy(message = messageText)) },
-                    minLines = 2
+                    minLines = 2,
+                    colors = textFieldColors
                 )
             }
         }
@@ -334,7 +360,11 @@ fun PingConfigEditor(
                         onIntervalChangeFinished(updated)
                     },
                     valueRange = 5f..120f,
-                    steps = 22
+                    steps = 22,
+                    colors = SliderDefaults.colors(
+                        thumbColor = pingColor,
+                        activeTrackColor = pingColor
+                    )
                 )
                 Text(
                     "Pings follow an exponential distribution around this average",
@@ -372,7 +402,8 @@ fun PingConfigEditor(
                                     }
                                 },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            suffix = { Text(":00") }
+                            suffix = { Text(":00") },
+                            colors = textFieldColors
                         )
                     }
                     Column(modifier = Modifier.weight(1f)) {
@@ -394,7 +425,8 @@ fun PingConfigEditor(
                                     }
                                 },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            suffix = { Text(":00") }
+                            suffix = { Text(":00") },
+                            colors = textFieldColors
                         )
                     }
                 }
@@ -517,7 +549,9 @@ fun PingConfigEditor(
                     NotificationHelper.showNotification(context, currentConfig())
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = pingColor),
+            border = BorderStroke(1.dp, pingColor)
         ) {
             Text("Test Notification")
         }
@@ -658,6 +692,7 @@ fun VibrationPatternPicker(
             }
             if (isCustom) {
                 Spacer(modifier = Modifier.height(8.dp))
+                val pingColor = PingColors.toComposeColor(config.colorValue)
                 OutlinedTextField(
                     value = customText,
                     onValueChange = { customText = it },
@@ -670,7 +705,12 @@ fun VibrationPatternPicker(
                         },
                     label = { Text("Pattern") },
                     placeholder = { Text("0, 200:180, 100, 300:255") },
-                    singleLine = true
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = pingColor,
+                        cursorColor = pingColor,
+                        focusedLabelColor = pingColor
+                    )
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(

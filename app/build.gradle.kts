@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.malcolmocean.randoping"
+    namespace = "com.malcolmocean.nowtice"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.malcolmocean.randoping"
+        applicationId = "com.malcolmocean.nowtice"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

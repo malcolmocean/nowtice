@@ -2,11 +2,11 @@
 
 ## Project
 
-RandoPing (repo: nowtice) — Android app for stochastic mindfulness pings. Kotlin, Gradle build. Package: `com.malcolmocean.randoping`.
+Nowtice — Android app for stochastic mindfulness pings. Kotlin, Gradle build. Package: `com.malcolmocean.nowtice`.
 
 Supports multiple independent pings, each with its own config, icon, and color. Uses AlarmManager for scheduling stochastic notification timing.
 
-Key source files in `app/src/main/java/com/malcolmocean/randoping/`:
+Key source files in `app/src/main/java/com/malcolmocean/nowtice/`:
 - `MainActivity.kt` — UI with tabbed multi-ping management
 - `PingScheduler.kt` — stochastic scheduling logic
 - `PingReceiver.kt` — handles alarm broadcasts

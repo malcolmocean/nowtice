@@ -1,4 +1,4 @@
-package com.malcolmocean.randoping
+package com.malcolmocean.nowtice
 
 import android.content.BroadcastReceiver
 import android.content.Context

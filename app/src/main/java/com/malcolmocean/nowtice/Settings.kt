@@ -1,4 +1,4 @@
-package com.malcolmocean.randoping
+package com.malcolmocean.nowtice
 
 import android.content.Context
 import androidx.compose.material.icons.Icons
@@ -34,7 +34,7 @@ data class PingConfig(
 ) {
     val requestCode: Int get() = id.hashCode()
     val notificationId: Int get() = id.hashCode() ushr 1
-    val channelId: String get() = "randoping_channel_$id"
+    val channelId: String get() = "nowtice_channel_$id"
 }
 
 object PingColors {

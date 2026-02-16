@@ -1,4 +1,4 @@
-# RandoPing
+# Nowtice
 
 Stochastic mindfulness pings for Android. Nudges you at random intervals to check in with yourself.
 
@@ -21,4 +21,4 @@ Requires Android SDK and JDK 17.
 
 ## Package
 
-`com.malcolmocean.randoping`
+`com.malcolmocean.nowtice`

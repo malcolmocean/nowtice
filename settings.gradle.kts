@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "RandoPing"
+rootProject.name = "Nowtice"
 include(":app")

@@ -1,4 +1,4 @@
-package com.malcolmocean.randoping
+package com.malcolmocean.nowtice
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
